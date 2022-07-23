@@ -11,7 +11,9 @@ using namespace std;
 
 Schema::Schema ()
 {
-
+  for (int i = 0; i < MaxGrootteSchema; i++) {
+    schema[i] = 0;
+  }
 // TODO: implementeer zo nodig deze constructor
 this->nrSpelers = 0; // TODO: value
 this->nrRondes = 0; // TODO: value.
@@ -22,6 +24,9 @@ this->nrRondes = 0; // TODO: value.
 
 Schema::Schema (int nwNrSpelers)
 {
+  for (int i = 0; i < MaxGrootteSchema; i++) {
+    schema[i] = 0;
+  }
   //Controle op aantal spelers
   if (nwNrSpelers % 4 == 2 || nwNrSpelers % 4 == 3)
   {
@@ -54,6 +59,7 @@ Schema::Schema (int nwNrSpelers)
 
 bool Schema::leesInDeelschema (const char* invoerNaam)
 {
+  Schema();
   //Controleert of het bestand invoernaam te openen is
   ifstream invoer;
   invoer.open(invoerNaam, ios::in);
@@ -165,7 +171,7 @@ bool Schema::isOngeldigSchema()
 //*************************************************************************
 
 void Schema::drukAfSchema (int schema[MaxGrootteSchema]) {
-  for (int i = 0; i < MaxGrootteSchema; i++) {
+  for (int i = 0; i < myArray; i++) {
     cout << schema[i] << ' ';
     if ((i + 1) % 4 == 0) {
       cout << "| ";
@@ -206,7 +212,6 @@ void Schema::deleteSpeler(int schema[MaxGrootteSchema]) {
     // * aantalDeelschemas is gelijk aan het aantal deelschemas dat we
     //   hebben gezien bij het bepalen van een schema
 bool Schema:: bepaalSchemaBT (int schema[MaxGrootteSchema],long long &aantalDeelschemas) {
-  int* schema;
   for (int i = putHere; i < myArray; i++) {
     if (i == myArray - 1) {
       drukAfSchema(schema);
@@ -377,3 +382,5 @@ bool Schema::tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, in
 } //tweedeKeerTegenGeweest
 
 //*************************************************************************
+
+
