@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
 #include "standaard.h"
 #include "schema.h"
 using namespace std;
@@ -26,11 +27,11 @@ Schema::Schema (int nwNrSpelers)
   {
     cout << "Dit is een ongeldig aantal spelers" << endl;
   }
-  
+
   //Variabelen initialiseren
   if (nwNrSpelers % 4 == 1)
   {
-    nrRondes = nwNrSpelers - 1; //checken
+    nrRondes = nwNrSpelers;
     nrTafels = (( (nwNrSpelers - 1) / 4)* nrRondes);
   }
   else
@@ -42,14 +43,11 @@ Schema::Schema (int nwNrSpelers)
   myArray = (nrRondes * nwNrSpelers);
   nrSpelers = nwNrSpelers;
   atRonde = 0;
-  atTafel = 0;
+  nowAtTafel = 0;
   putHere = 0;
   mijnPlek = 0;
 
   drukAfSchema(schema);
-  maatGeweest(schema);
-  vrijGeweest(schema);
-  tegenstanderGeweest(schema);  
 }  // constructor met parameter
 
 //*************************************************************************
@@ -64,134 +62,132 @@ bool Schema::leesInDeelschema (const char* invoerNaam)
     return false;
   }
   invoer >> nrSpelers >> atRonde;
-  nrRondes = (nrSpelers - 1);
-  myArray = (nrRondes * nrSpelers); //-1 belangrijk omdat index bij nul begint.
-
-  // Controleert of het aantal spelers bruikbaar is, binnen de grenzen van de opdracht,
-  // en of het aantal rondes bruikbaar is. Initialiseert nrRondes = maximum rondes
-
-  if (nrSpelers > MaxNrSpelers) 
-  { 
-    cout << "Het aantal spelers is niet bruikbaar. Er kunnen maximaal 20 spelers zijn voor dit programma." << endl;
-    return false;
+  if (!(nrSpelers % 4 == 0)) {
+    nrRondes = nrSpelers;
+    }
+  else {
+    nrRondes = nrSpelers-1;
   }
-  if (atRonde >= nrRondes) 
-  {
-    cout << "Het aantal rondes is niet bruikbaar. Het aantal rondes is maximaal het aantal spelers - 1." << endl;
-    return false;
-  }
+  myArray = (nrRondes * nrSpelers);
 
  //Leest het ingevoerde schema in
-  for (int ronde = 0; ronde < atRonde; ++ronde) 
-  {
-    for (int spelers = 0; spelers < nrSpelers; ++spelers) 
-    {
-      mijnPlek = (ronde * nrSpelers + spelers);
-      invoer >> schema[mijnPlek];
-    }
-  }
+ for (int i = 0; i < (nrSpelers * atRonde); i++) {
+   invoer >> schema[i];
+ }
 
-  //Controleert of alle getallen in het deelschema geldige spelers voorstellen
-  for (int i = 0; i < myArray; i++) {
-    if (schema[i] >= nrSpelers) {
-      cout << "Dit schema heeft ongeldige speler(s) en kan niet worden gebruikt." << endl;
-      return false;
-    }
-  }
-  //Controleert of alle getallen samen geldig deelschema vormen.
-  if (nrSpelers % 4 == 2 || nrSpelers % 4 == 3)  {
-    cout << "Dit schema heeft een ongeldig aantal spelers." << endl;
-    return false;
-  }
-  //Controleert of iedere speler maximaal 1x per ronde voorkomt
-  for (int speler = 0; speler < nrSpelers; speler++)
-  {
-    if (aantalRondesGespeeld(speler) > atRonde)
-    {
-      cout << "Dit schema heeft speler(s) die meer dan 1x per ronde voorkomen." << endl;
-      return false;
-    }
-  }
-
-  //Initialiseert aantal tafel bij schema
   if (nrSpelers % 4 == 0)
   {
+    nrRondes = nrSpelers-1;
     nrTafels = ((nrSpelers / 4) * nrRondes);
-    atTafel = ((nrSpelers / 4) * atRonde);
+    nowAtTafel = ((nrSpelers / 4) * atRonde);
+    putHere = nrSpelers * atRonde;
+
   }
   else
   {
     int spelerCorr = nrSpelers - 1;
+    nrRondes = nrSpelers;
     nrTafels = ((spelerCorr / 4) * nrRondes);
-    atTafel = ((spelerCorr / 4) * atRonde);
+    nowAtTafel = ((spelerCorr / 4) * atRonde);
+    putHere = (spelerCorr * atRonde);
   }
-  putHere = (atRonde * nrSpelers);
-
-  maatGeweest(schema);
-  vrijGeweest(schema);
-  tegenstanderGeweest(schema);
+  //Controle
+  if (isOngeldigSchema()){
+    return false;
+  }
   drukAfSchema(schema);
-  
+
   return true;
 }  // leesInDeelschema
 
 //*************************************************************************
 
-void Schema::drukAfSchema (int schema[MaxGrootteSchema])
+bool Schema::isGeldigSchema() {
+  for (int speler = 0; speler < nrSpelers; speler++) {
+    if (aantalRondesGespeeld(speler) > atRonde) {
+      cerr << "Speler " << speler << " komt meer dan 1x per ronde voor." << endl;
+      return false;
+    }
+    if (maatGeweest(schema, speler, putHere)) {
+      cerr << "Speler " << speler << " heeft 2x dezelfde maat." << endl;
+      return false;
+    }
+    if (tweedeKeerTegenGeweest(schema, speler, putHere)) {
+      cerr << "Speler " << speler << " heeft meer dan 2x dezelfde tegenstander." << endl;
+      return false;
+    }
+  }
+  return true;
+} //isGeldigSchema
+
+bool Schema::isOngeldigSchema()
 {
-  for (int ronde = 0; ronde < nrRondes; ++ronde) 
-  {
-    for (int spelers = 0; spelers < nrSpelers; ++spelers) 
-    {
-      mijnPlek = ((ronde * nrSpelers) + spelers);
-      cout << schema[mijnPlek] << ' ';
-      //Einde van iedere tafel wordt gemarkeerd met een |
-      if ((mijnPlek + 1) % 4 == 0)
-      { 
-        cout << "| ";
-      }
-      //Einde van iedere ronde wordt gemarkeerd met een linebreak
-      if ((mijnPlek + 1) % nrSpelers == 0)
-      {
-        cout << endl;
-      } 
+  // Controleert of het aantal spelers bruikbaar is, binnen de grenzen van de opdracht,
+  // en of het aantal rondes bruikbaar is. Initialiseert nrRondes = maximum rondes
+  if (nrSpelers > MaxNrSpelers) {
+  cerr << "Het maximum aantal spelers is 20." << endl;
+  return true;
+  }
+  //Controleert het aantal rondes
+  if (atRonde >= nrRondes) {
+    cerr << "Het aantal rondes is niet bruikbaar." << endl;
+    return true;
+  }
+  //Controleert of alle getallen in het deelschema geldige spelers voorstellen
+  for (int i = 0; i < myArray; i++) {
+    if (schema[i] >= nrSpelers) {
+      cerr << "Dit schema heeft ongeldige speler(s) en kan niet worden gebruikt." << endl;
+      return true;
     }
   }
-  cout << "maatMatrix" << endl;
-  for (int rij = 0; rij < nrSpelers; rij++) 
-  { 
-    for (int kolom = 0; kolom < nrSpelers; kolom++) 
-    {
-      cout << maat[kolom][rij] << ' ';
-    }
-    cout << endl;
+  //Controleert of alle getallen samen geldig deelschema vormen.
+  if (nrSpelers % 4 == 2 || nrSpelers % 4 == 3)  {
+    cerr << "Dit schema heeft een ongeldig aantal spelers." << endl;
+    return true;
   }
-  cout << "tegenMatrix" << endl;
-  for (int r = 0; r < nrSpelers; r++) 
-  { 
-    for (int kol = 0; kol < nrSpelers; kol++) 
-    {
-      cout << tegen[kol][r] << ' ';
+  //Controleert of iedere speler maximaal 1x per ronde voorkomt
+  for (int speler = 0; speler < nrSpelers; speler++) {
+    if (aantalRondesGespeeld(speler) > atRonde) {
+      cerr << "Speler " << speler << " komt meer dan 1x per ronde voor." << endl;
+      return true;
     }
-    cout << endl;
+    if (maatGeweest(schema, speler, putHere)) {
+      cerr << "Speler " << speler << " heeft 2x dezelfde maat." << endl;
+      return true;
+    }
+    if (tweedeKeerTegenGeweest(schema, speler, putHere)) {
+      cerr << "Speler " << speler << " heeft meer dan 2x dezelfde tegenstander." << endl;
+      return true;
+    }
   }
-}
-  
+  return false;
+} //isOngeldigSchema
 
-  // drukAfSchema
+//*************************************************************************
 
-//***************************** ************** *****************************
+void Schema::drukAfSchema (int schema[MaxGrootteSchema]) {
+  for (int i = 0; i < MaxGrootteSchema; i++) {
+    cout << schema[i] << ' ';
+    if ((i + 1) % 4 == 0) {
+      cout << "| ";
+    }
+    if ((i + 1) % nrSpelers == 0) {
+      cout << endl;
+    }
+  }
+} // drukAfSchema
+
+//************************************************************************
 
 /*/ Deze functie voegt spelers toe van 0 tot 7 op posities 0 tot 7.
 putHere wordt geinitialiseerd bij inlezen van een schema /*/
-void Schema::addSpeler (int schema[MaxGrootteSchema])
+void Schema::addSpeler (int i, int pos, int schema[MaxGrootteSchema])
 {
-  schema[putHere] = speler; //zet een speler erin
-  speler = ((speler + 1) % nrSpelers);
-  maatGeweest(schema); //Deze functies roep ik aan zodat de waardes worden bijgewerkt
-  tegenstanderGeweest(schema);
-  vrijGeweest(schema);
-  putHere++;
+  schema[pos] = i; //zet een speler erin
+}
+
+void Schema::deleteSpeler(int schema[MaxGrootteSchema]) {
+  schema[putHere] = 0;
 }
 
 // Bepaal met behulp van backtracking een geldig schema voor het huidige
@@ -210,30 +206,44 @@ void Schema::addSpeler (int schema[MaxGrootteSchema])
     //   op positie 0 van het array.
     // * aantalDeelschemas is gelijk aan het aantal deelschemas dat we
     //   hebben gezien bij het bepalen van een schema
-bool Schema:: bepaalSchemaBT (int schema[MaxGrootteSchema],
-                           long long &aantalDeelschemas)
-{
-    addSpeler(schema);
-    aantalDeelschemas++;
-    if (isOngeldigSchema()) //als het schema niet geldig is
-    {putHere--;             //blijven we op dezelfde plek
-    addSpeler(schema);}     //en voegen speler+1 toe
-    if (!isOngeldigSchema())
-    {return true;}
-    else {return false;}
+bool Schema:: bepaalSchemaBT (int schema[MaxGrootteSchema],long long &aantalDeelschemas) {
+  cout << "Eerste element is "<< schema[0] << endl;
+  for (int i = putHere; i < myArray; i++) {
+    if (i == myArray - 1) {
+      drukAfSchema(schema);
+      return true;
+    }
+    else {
+        for (int speler = 0; speler < nrSpelers; speler++) {
+          schema[i] = speler;
+          cout << schema[i] << endl;
+          cout << "i is " << i << endl;
+          cout << "pos is " << putHere <<endl;
+          aantalDeelschemas++;
+          if (isGeldigSchema()) {
+            putHere++;
+            bepaalSchemaBT(schema, aantalDeelschemas);
+          } //if
+          else {//ongeldig schema
+            break;
+        }
+      } //else
+    }
+  } //for
+  return false;
 }  //  bepaalSchemaBT
 
 //*************************************************************************
 
 bool Schema::bepaalMinSchema (int schema[MaxGrootteSchema],
                           long long &aantalDeelschemas, bool bouwWaardeOp)
-{ 
+{
 
 // TODO: implementeer deze memberfunctie
   return false;
 
 }  // bepaalMinSchema
-  
+
 //*************************************************************************
 
 void Schema::bepaalSchemaGretig (int schema[MaxGrootteSchema])
@@ -243,39 +253,37 @@ void Schema::bepaalSchemaGretig (int schema[MaxGrootteSchema])
 
 }  // bepaalSchemaGretig
 
+//*************************************************************************
 int* Schema::getRonde(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers)
 {
-  return &schema[(rondeIx * nrSpelers)]; 
+  return &schema[(rondeIx * nrSpelers)];
 }
-
+//*************************************************************************
 int Schema::getPlekje(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers, int spelerPos)
 {
   int* plekje = getRonde(schema, rondeIx, nrSpelers);
   return plekje[spelerPos];
 }
-
-
+//*************************************************************************
 //Telt hoe veel rondes een speler heeft gespeeld
 int Schema::aantalRondesGespeeld(int speler)
 {
-  int teller = 0; 
-  for (int i = 0; i < (atRonde * nrSpelers); i++)
-  {
-    if (schema[i] == speler)
-    {
+  int teller = 0;
+  for (int i = 0; i < (atRonde * nrSpelers); i++) {
+    if (schema[i] == speler)  {
       teller++;
     }
   }
   return teller;
 }
-
+//*************************************************************************
 /* Deze functie zal het beginpunt van tafel n in totSchema aangeven.
 Let op: returnt een pointer, dus gebruik in combi met getSpelerAt vooral. */
 int* Schema::getTafel(int schema[MaxGrootteSchema], int tafelIx)
 {
   return &schema[(tafelIx * 4)];
 }
-
+//*************************************************************************
 // Returnt welke speler aan tafel n zit op de gevraagde positie.
 int Schema::getSpelerAt(int schema[MaxGrootteSchema], int tafelIx, int spelerPos)
 {
@@ -284,112 +292,91 @@ int Schema::getSpelerAt(int schema[MaxGrootteSchema], int tafelIx, int spelerPos
   {
     return tafel[spelerPos];
   }
-  else 
+  else
   {
     return tafel[spelerPos % 4];
   }
 }
+//*************************************************************************
+/* Deze functie zoekt de speler in het schema. Waneer de speler is gevonden,
+wordt de maat gevonden met de functie getSpelerAt. Deze maat wordt in de
+unordered set myMaten geplaatst. De functie unordered_set set.insert()
+retourneert een pair, bestaande uit: een pointer naar het element, of een 
+equivalent element al in de set; en een boolean die false retourtneert indien 
+de set al het element bevatte.
+INPUT: een schema
 
-int Schema::maatMatrixMaken() //Matrix intializeren voor bijhouden of spelers met elkaar hebben gespeeld
-{
-    size_t M = MaxNrSpelers; //Zo groot als gegeven constante
-    const int waarde = 0;
-    int maat[M][M];
-    std::fill(*maat, *maat + M*M, waarde);  //Vul de matrix met nullen
-    return 0;
-}
+OUTPUT:
+- TRUE indien de speler deze maat al eens heeft gehad
+- FALSE indien er nooit een duplicaat wordt geplaatst in de set myMaten */
 
-int Schema::vrijGeweestMaken() //Matrix intializeren voor bijhouden of speler ronde vrij is geweest
+bool Schema::maatGeweest(int schema[MaxGrootteSchema], int speler, int putHere)  // maatMatrix correct invullen op basis van schema
 {
-  if (nrSpelers % 4 == 1) //Relevant wanneer aantal deelnemers gelijk is aan 1 modulo 4
-  {
-    size_t M = nrRondes;       
-    const int waarde = 0;
-    int vrij[M][M];
-    std::fill(*vrij, *vrij + M*M, waarde);
-    return 0;
-  }
-  return 0;                           
-}
+  int atTafel;
+  int totHier = putHere - 2;
+  for (int i = 0; i <= totHier; i++) {
+    if (i == 0) {
+      atTafel = 0;
+    }
+    else {
+      if (i % 4 == 0) {
+        atTafel++;
+      } 
+    } //else
+    if (schema[i] == speler) { //speler gevonden
+      int myMaat = getSpelerAt(schema, atTafel, (i + 2));
+      //Komt deze speler al voor in de verzameling myMaten?
+      auto addMaat = myMaten.insert(myMaat);
+      if(addMaat.second == false) { 
+        myMaten.clear(); //clear cache
+        return true;
+      } //if
+    } //if
+  } //for
+  myMaten.clear(); //clear cache
+  return false; 
+} //maatGeweest
 
-int Schema::tegenstanderGeweestMaken()
-{
-  size_t M = nrRondes;
-  const int waarde = 0;
-  int tegen[M][M];
-  std::fill(*tegen, *tegen + M*M, waarde);
-  return 0;
-}
+//*************************************************************************
+/* Deze functie zoekt de speler in het schema. Wanneer de speler is gevonden,
+worden de tegenstanders gevonden met de functie getSpelerAt. Deze tegen-
+standers worden in de multiset myTegenstanders geplaatst. 
 
-void Schema::maatGeweest(int schema[MaxGrootteSchema])  // maatMatrix correct invullen op basis van schema
-{
-  for (int tafel = 0; tafel < nrTafels; tafel++)
-  {
-   for (int pos = 0; pos < 4; pos++)
-   {
-     int ik = getSpelerAt(schema, tafel, pos);
-     int partner = getSpelerAt(schema, tafel, (pos + 2));
-     maat[ik][partner]++;
-   }
-  }
-  for (int i = 0; i < nrSpelers; i++)
-  {
-    maat[i][i] = 1;
-  }
-}
+INPUT: een schema, en een speler
 
-void Schema::vrijGeweest(int schema[MaxGrootteSchema])
+OUTPUT:
+- TRUE wanneer de verzameling tegenstanders meer dan 2x hetzelfde element bevat
+- FALSE wanneer de verzameling tegenstanders max. 2x hetzelfde element bevat
+  na zoeken door het gehele schema. */
+
+bool Schema::tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, int putHere)
 {
-  if (nrSpelers % 4 == 1) // Voer alleen uit als er een speler vrij moet zijn in een ronde
-  {
-    for (int j = 0; j < nrSpelers; j++) //Kijkt voor iedere speler
-    {
-      if ((aantalRondesGespeeld(j)) == (nrSpelers-2)) //of deze speler het aantal rondes - 1 maal heeft gespeeld.
-      {
-      vrij[j][j]++; //Indien waar, zet een 1 op de diagonaal van de matrix
+  int atTafel = 0;
+  int totHier = putHere - 3;
+  for (int i = 0; i <= totHier; i++) {
+    if (i == 0) {
+      atTafel = 0;
+    }
+    else {
+      if (i % 4 == 0) {
+        atTafel++;
       }
     }
-  }
-}
-
-void Schema::tegenstanderGeweest(int schema[MaxGrootteSchema])
-{
-  //Loopt door posities van alle tafels
-  for (int tafel = 0; tafel < nrTafels; tafel++)
-  {
-   for (int pos = 0; pos < 4; pos++)
-   {
-     int ik = getSpelerAt(schema, tafel, pos);
-     int t1 = getSpelerAt(schema, tafel, (pos + 1));
-     int t2 = getSpelerAt(schema, tafel, (pos + 3));
-     tegen[ik][t1]++;
-     tegen[ik][t2]++;
-   }
-  }
-  //Op de diagonaal wil ik 2 zetten omdat je nooit je
-  //eigen tegenstander bent
-  for (int i = 0; i < nrSpelers; i++)
-  {
-    tegen[i][i] = 2;      
-  }
-}    
-
-/* Deze functie kijkt of er max. 1x met iemand gespeeld
-max. 2x tegen iemand, en of iedere speler max. 1 ronde vrij is. */
-bool Schema::isOngeldigSchema()
-{
-  //Loop over alle kolommen en rijen
-  for (int kolom = 0; kolom < nrSpelers; kolom++) 
-  {
-    for (int rij = 0; rij < nrRondes; rij++)
-    {
-      if (maat[kolom][rij] == 2) //Heeft een speler meer dan 1x met iemand gespeeld?
-      { return true;}
-      if (tegen[kolom][rij] == 3)  //Heeft een speler meer dan 2x tegen iemand gespeeld?
-      { return true; }
-      if (vrij[kolom][rij] == 2) //Is een speler 2 rondes vrij geweest?
-      { return true; }
-    }
-  }
+    if (schema[i] == speler) {
+      int t1 = getSpelerAt(schema, atTafel, (i + 1));
+      int t2 = getSpelerAt(schema, atTafel, (i + 3));
+      myTegenstanders.insert(t1), myTegenstanders.insert(t2);
+        //Heb ik al twee keer tegen deze spelers gespeeld
+      if(myTegenstanders.count(t1) > 2 || myTegenstanders.count(t2) > 2) {
+        myTegenstanders.clear();
+        return true;
+        }
+      }
+  } //for
+  myTegenstanders.clear();
   return false;
-}
+} //tweedeKeerTegenGeweest
+
+//*************************************************************************
+
+

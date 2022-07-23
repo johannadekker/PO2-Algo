@@ -4,6 +4,7 @@
 #define SchemaHVar  // ge-include wordt
 
 #include "constantes.h"
+#include <unordered_set>
 
 class Schema
 { public:
@@ -41,8 +42,6 @@ class Schema
     // * membervariabele nrSpelers heeft een bruikbare waarde
     // * parameter schema bevat een compleet schema dat past bij nrSpelers
     void drukAfSchema (int schema[MaxGrootteSchema]);
-
-    void addSpeler (int schema[MaxGrootteSchema]);
 
     // Bepaal met behulp van backtracking een geldig schema voor het huidige
     // aantal spelers. Het maakt niet uit wat de `waarde' van dit schema is
@@ -104,9 +103,13 @@ class Schema
     // * parameter `schema' bevat een compleet schema voor het huidige
     //   aantal spelers
     void bepaalSchemaGretig (int schema[MaxGrootteSchema]);
-    
-    
+
+
+
+
+  private:
     /* Toegevoegde functies: */
+
     int opPlek(int rondeIx, int nrSpelers, int spelerIx);
     int* getRonde(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers);
     int getPlekje(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers, int spelerPos);
@@ -115,41 +118,37 @@ class Schema
 
     /* Geeft de speler aan een tafel op de gegeven positie */
     int getSpelerAt(int schema[MaxGrootteSchema], int tafelIx, int spelerPos);
-    int maatMatrixMaken();
-    int vrijGeweestMaken();
-    int tegenstanderGeweestMaken();
-    void maatGeweest(int schema[MaxGrootteSchema]);
-    void vrijGeweest(int schema[MaxGrootteSchema]);
-    void tegenstanderGeweest(int schema[MaxGrootteSchema]);
-    void mijnTegenstandersZijn(int schema[MaxGrootteSchema], int tafel, int positie);
-    bool metIedereenGespeeld(int schema[MaxGrootteSchema]);
+
+    void addSpeler (int i, int pos, int schema[MaxGrootteSchema]);
+    void deleteSpeler(int schema[MaxGrootteSchema]);
+    bool maatGeweest(int schema[MaxGrootteSchema], int speler, int putHere);
+    bool tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, int putHere);
+
+    std::unordered_set <int> myMaten;
+    std::unordered_multiset <int> myTegenstanders;
+    std::unordered_set <int> vrijGeweest;
+
+
     bool isOngeldigSchema();
+    bool isGeldigSchema();
+    bool* isGeldig(int schema[MaxGrootteSchema]);
     bool* isOngeldig(int schema[MaxGrootteSchema]);
 
-  private:
-
-// TODO: uw eigen private memberfuncties
 
     int nrSpelers;       // aantal spelers bij dit schema
     int nrRondes;        // aantal rondes bij dit schema
     int atRonde;         // ronde waar schema nu is
     int nrTafels;        // aantal tafels bij dit schema
-    int atTafel;
+    int nowAtTafel;
     int myArray;         // maat van de array bij dit schema;
     int mijnPlek;        // geeft de juiste index als int om te zoeken in array
     int putHere;
-    int schema[MaxGrootteSchema];   // totaal schemam
-    int maat[MaxNrSpelers][MaxNrSpelers]; //maatMatrix
-    int vrij[MaxNrSpelers][MaxNrSpelers]; //matrix om bij te houden of een speler max 1x vrij is geweest
-    int tegen[MaxNrSpelers][MaxNrSpelers];
-    int speler;
-    int t1, t2;           //tegenstander 1 en 2
+    int schema[MaxGrootteSchema];
     int start;
-  
+
 
 // TODO: uw eigen private membervariabelen
 
 };
 
 #endif
-
