@@ -96,7 +96,6 @@ bool Schema::leesInDeelschema (const char* invoerNaam)
     return false;
   }
   drukAfSchema(schema);
-
   return true;
 }  // leesInDeelschema
 
@@ -207,7 +206,7 @@ void Schema::deleteSpeler(int schema[MaxGrootteSchema]) {
     // * aantalDeelschemas is gelijk aan het aantal deelschemas dat we
     //   hebben gezien bij het bepalen van een schema
 bool Schema:: bepaalSchemaBT (int schema[MaxGrootteSchema],long long &aantalDeelschemas) {
-  cout << "Eerste element is "<< schema[0] << endl;
+  int* schema;
   for (int i = putHere; i < myArray; i++) {
     if (i == myArray - 1) {
       drukAfSchema(schema);
@@ -226,9 +225,9 @@ bool Schema:: bepaalSchemaBT (int schema[MaxGrootteSchema],long long &aantalDeel
           } //if
           else {//ongeldig schema
             break;
+          }
         }
       } //else
-    }
   } //for
   return false;
 }  //  bepaalSchemaBT
@@ -378,5 +377,3 @@ bool Schema::tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, in
 } //tweedeKeerTegenGeweest
 
 //*************************************************************************
-
-
