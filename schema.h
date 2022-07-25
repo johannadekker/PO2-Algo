@@ -5,10 +5,26 @@
 
 #include "constantes.h"
 #include <unordered_set>
+#include <vector>
+
+/* class Speler {
+  public:
+    Speler();
+    int id;
+    std::unordered_set <int> myMaten;
+    std::unordered_multiset <int> myTegenstanders;
+    std::unordered_set <int> vrijGeweest;
+
+    Speler(int i) {
+      id = i;
+    }
+
+    void vindMaten();
+    
+}; */
 
 class Schema
 { public:
-
     // Default constructor
     Schema ();
 
@@ -104,51 +120,83 @@ class Schema
     //   aantal spelers
     void bepaalSchemaGretig (int schema[MaxGrootteSchema]);
 
+  std::unordered_set <int> myMaten;
+  std::unordered_multiset <int> myTegenstanders;
+  std::unordered_set <int> vrijGeweest;
+  std::vector <int> ingedeeld;
+
+    int nrSpelers;       // aantal spelers bij dit schema
+    int nrRondes;        // aantal rondes bij dit schema
+    int sizeRonde;       // hoe veel spelers worden ingedeeld per ronde
+    int bijRonde;         // bij inlezen van deelschema
+    int startPos;
+    int nrTafels;        // aantal tafels bij dit schema
+    int myArray;         // maat van de array bij dit schema;
+    int schema[MaxGrootteSchema];
+    int deelschema[MaxGrootteSchema];
 
 
-
-  private:
-    /* Toegevoegde functies: */
 
     int opPlek(int rondeIx, int nrSpelers, int spelerIx);
     int* getRonde(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers);
     int getPlekje(int schema[MaxGrootteSchema], int rondeIx, int nrSpelers, int spelerPos);
-    int aantalRondesGespeeld(int speler);
     int* getTafel(int schema[MaxGrootteSchema], int tafelIx);
-
-    /* Geeft de speler aan een tafel op de gegeven positie */
     int getSpelerAt(int schema[MaxGrootteSchema], int tafelIx, int spelerPos);
 
-    void addSpeler (int i, int pos, int schema[MaxGrootteSchema]);
-    void deleteSpeler(int schema[MaxGrootteSchema]);
-    bool maatGeweest(int schema[MaxGrootteSchema], int speler, int putHere);
-    bool tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, int putHere);
+  private:
+    bool vectorAlGespeeld();
+    bool vectorMaatGeweest();
+    bool vectorTegenGeweest();
+    bool vectorVrijGeweest();
+    bool isVeilig();
+    bool hulpSchemaBTV(long long &aantalDeelschemas);
 
-    std::unordered_set <int> myMaten;
-    std::unordered_multiset <int> myTegenstanders;
-    std::unordered_set <int> vrijGeweest;
+
+    /* Toegevoegde functies: */
 
 
-    bool isOngeldigSchema();
-    bool isGeldigSchema();
+
+    /* Geeft de speler aan een tafel op de gegeven positie */
+    
+
+    bool hulpSchemaBT(int pos, int schema[MaxGrootteSchema], long long &aantalDeelschemas);
+
+    bool maatGeweest(int schema[MaxGrootteSchema], int speler, int pos);
+    bool tweedeKeerTegenGeweest(int schema[MaxGrootteSchema], int speler, int pos);
+    bool alGespeeld(int speler, int pos, int schema[MaxGrootteSchema]);
+    int aantalRondesGespeeld(int speler, int pos, int schema[MaxGrootteSchema]);
+
+    
+
+    int maatMatrix[MaxNrSpelers][MaxNrSpelers];
+    int tegenMatrix[MaxNrSpelers][MaxNrSpelers];
+    int vrijMatrix[MaxNrSpelers][MaxNrSpelers];
+    bool wasMaat(int speler, int maat);
+    bool tegenGeweest(int speler, int t1, int t2);
+
+   void addSpeler(int speler);
+   void deleteSpeler();
+
+    int atRonde(int pos);
+    int atTafel(int pos);
+
+    bool isOngeldigSchema(int schema[MaxGrootteSchema]);
+    bool isGeldigSchema(int pos, int schema[MaxGrootteSchema]);
     bool* isGeldig(int schema[MaxGrootteSchema]);
     bool* isOngeldig(int schema[MaxGrootteSchema]);
+    bool isPlaatsingGeldig(int pos, int speler, int schema[MaxGrootteSchema]);
 
 
-    int nrSpelers;       // aantal spelers bij dit schema
+    /* int nrSpelers;       // aantal spelers bij dit schema
     int nrRondes;        // aantal rondes bij dit schema
-    int atRonde;         // ronde waar schema nu is
+    int sizeRonde;       // hoe veel spelers worden ingedeeld per ronde
+    int bijRonde;         // bij inlezen van deelschema
+    int startPos;
     int nrTafels;        // aantal tafels bij dit schema
-    int nowAtTafel;
     int myArray;         // maat van de array bij dit schema;
-    int mijnPlek;        // geeft de juiste index als int om te zoeken in array
-    int putHere;
-    int schema[MaxGrootteSchema];
-    int start;
-
-
-// TODO: uw eigen private membervariabelen
-
+    int schema[MaxGrootteSchema]; */
 };
+
+
 
 #endif
